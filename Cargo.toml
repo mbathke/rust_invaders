@@ -1,0 +1,15 @@
+[package]
+name = "rust_invaders"
+version = "0.1.0"
+authors = ["Michael Bathke <michael.bathke@avenga.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = { version = "0.6.0", features = ["dynamic"] }
+rand = "0.8"
+simple_logger = "2.1.0"
+
+[workspace]
+resolver = "2" # Important! wgpu/Bevy needs this!
