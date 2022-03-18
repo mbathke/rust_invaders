@@ -1,39 +1,66 @@
 use bevy::prelude::*;
+use bevy::core::FixedTimestep;
 
-use crate::{Materials, SCALE, TIME_STEP, WinSize, Speed, Player, PlayerReadyFire, Laser, FromPlayer};
+use crate::{
+    Materials, 
+    SCALE, 
+    TIME_STEP, 
+    WinSize, 
+    Speed, 
+    Player, 
+    PlayerReadyFire, 
+    Laser, 
+    FromPlayer,
+    PlayerState,
+    PLAYER_RESPAWN_DELAY
+};
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
        app
+        .insert_resource(PlayerState::default())
         .add_startup_stage("game_setup_actors", SystemStage::single(player_spawn.system()))
         .add_system(player_movement.system())
         .add_system(player_fire.system())
-        .add_system(laser_movement.system());
+        .add_system(laser_movement.system())
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(0.5))
+                .with_system(player_spawn.system()),
+        );
     }
 }
 
 fn player_spawn (
     mut commands: Commands,
     materials: Res<Materials>,
-    win_size: Res<WinSize>
+    win_size: Res<WinSize>,
+    time: Res<Time>,
+    mut player_state: ResMut<PlayerState>,
 ) {
-    // spawn sprite
-    let bottom = -win_size.h / 2.;
-    commands
-        .spawn_bundle(SpriteBundle {
-            texture: materials.player.clone(),
-            transform: Transform {
-                translation: Vec3::new(0., bottom + 75. / 4. + 5., 10.),
-                scale: Vec3::new(SCALE, SCALE, 1.),
+    let now = time.seconds_since_startup();
+    let last_shot = player_state.last_shot;
+
+    if !player_state.on && (last_shot == 0. || now > last_shot + PLAYER_RESPAWN_DELAY) {
+        // spawn sprite
+        let bottom = -win_size.h / 2.;
+        commands
+            .spawn_bundle(SpriteBundle {
+                texture: materials.player.clone(),
+                transform: Transform {
+                    translation: Vec3::new(0., bottom + 75. / 4. + 5., 10.),
+                    scale: Vec3::new(SCALE, SCALE, 1.),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(Player)
-        .insert(PlayerReadyFire(true))
-        .insert(Speed::default());
+            })
+            .insert(Player)
+            .insert(PlayerReadyFire(true))
+            .insert(Speed::default());
+        player_state.spawned();
+    }
 }
 
 fn player_movement (
