@@ -1,15 +1,15 @@
 // #![allow(unused)]
 
-mod player;
 mod enemy;
 mod lib;
+mod player;
 
 use bevy::prelude::*;
 use bevy::sprite::collide_aabb::collide;
-use std::collections::HashSet;
-use player::PlayerPlugin;
 use enemy::EnemyPlugin;
 use lib::texture;
+use player::PlayerPlugin;
+use std::collections::HashSet;
 
 const PLAYER_SPRITE: &str = "player_a_01.png";
 const PLAYER_LASER_SPRITE: &str = "laser_a_01.png";
@@ -69,6 +69,7 @@ impl PlayerState {
 // endregion: resource
 
 // region: component
+
 #[derive(Component)]
 struct Laser;
 
@@ -78,7 +79,6 @@ struct Player;
 struct PlayerReadyFire(bool);
 #[derive(Component)]
 struct FromPlayer;
-
 
 #[derive(Component)]
 struct Enemy;
@@ -97,6 +97,7 @@ impl Default for Speed {
         Self(500. * SPEED_MULTIPLIER)
     }
 }
+
 // endregion: component
 
 fn main() {
@@ -124,7 +125,7 @@ fn setup(
     mut commands: Commands,
     mut windows: ResMut<Windows>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>
+    asset_server: Res<AssetServer>,
 ) {
     let window = windows.get_primary_mut().unwrap();
 
@@ -143,16 +144,19 @@ fn setup(
     });
     commands.insert_resource(WinSize {
         w: window.width(),
-        h: window.height()
+        h: window.height(),
     });
 }
 
 fn player_laser_hit_enemy(
     mut commands: Commands,
-    laser_query: Query<(Entity, &Transform, Option<&Handle<Image>>), (With<Laser>, With<FromPlayer>)>,
+    laser_query: Query<
+        (Entity, &Transform, Option<&Handle<Image>>),
+        (With<Laser>, With<FromPlayer>),
+    >,
     enemy_query: Query<(Entity, &Transform, Option<&Handle<Image>>), With<Enemy>>,
     mut active_enemies: ResMut<ActiveEnemies>,
-    images: Res<Assets<Image>>
+    images: Res<Assets<Image>>,
 ) {
     let mut enemies_blasted: HashSet<Entity> = HashSet::new();
 
@@ -163,7 +167,7 @@ fn player_laser_hit_enemy(
 
             let laser_size = texture::get_size(laser_opt_handle, &images);
             let enemy_size = texture::get_size(enemy_opt_handle, &images);
-            
+
             let collision = collide(
                 laser_tf.translation,
                 laser_size * laser_scale.truncate().abs(),
@@ -198,10 +202,13 @@ fn enemy_laser_hit_player(
     mut commands: Commands,
     mut player_state: ResMut<PlayerState>,
     time: Res<Time>,
-    laser_query: Query<(Entity, &Transform, Option<&Handle<Image>>), (With<Laser>, With<FromEnemy>)>,
+    laser_query: Query<
+        (Entity, &Transform, Option<&Handle<Image>>),
+        (With<Laser>, With<FromEnemy>),
+    >,
     player_query: Query<(Entity, &Transform, Option<&Handle<Image>>), With<Player>>,
-    images: Res<Assets<Image>>
-){
+    images: Res<Assets<Image>>,
+) {
     for (laser_entity, laser_tf, laser_opt_handle) in laser_query.iter() {
         for (player_entity, player_tf, player_opt_handle) in player_query.iter() {
             let laser_scale = Vec3::from(laser_tf.scale);
@@ -224,7 +231,7 @@ fn enemy_laser_hit_player(
 
                 // remove laser
                 commands.entity(laser_entity).despawn();
-                
+
                 // spawn explosion
                 commands
                     .spawn()
@@ -260,25 +267,25 @@ fn animate_explosion(
     mut commands: Commands,
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<(
-        Entity,
-        &mut Timer,
-        &mut TextureAtlasSprite,
-        &Handle<TextureAtlas>
-    ),
-        With<Explosion>
-    >
+    mut query: Query<
+        (
+            Entity,
+            &mut Timer,
+            &mut TextureAtlasSprite,
+            &Handle<TextureAtlas>,
+        ),
+        With<Explosion>,
+    >,
 ) {
     for (entity, mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
-       timer.tick(time.delta());
-       if timer.finished() {
+        timer.tick(time.delta());
+        if timer.finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
             sprite.index += 1;
 
             if sprite.index == texture_atlas.textures.len() as usize {
                 commands.entity(entity).despawn();
             }
-       }
+        }
     }
 }
-
